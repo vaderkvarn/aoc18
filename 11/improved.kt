@@ -25,11 +25,9 @@ fun solve() {
     var maxY = -1
     var maxPl: Int = 0
     var maxSquareSize = -1
-    var count = 0
     for (ss in 3..size - 1) {
         for (i in 0..size - ss - 1) {
-            for (j in 0..size - ss - 1) {
-                count += 1
+            for (j in 0..size - ss - 1) {       
                 val pl = I[i+ss][j+ss] + I[i][j] - I[i+ss][j] - I[i][j+ss]
                 if (pl > maxPl) {
                     maxPl = pl
@@ -43,7 +41,6 @@ fun solve() {
             println(maxX.toString() + "," + maxY.toString())
         }
     }
-    println(count)
     println(maxX.toString() + "," + maxY.toString() + "," + maxSquareSize.toString())
 }
 fun main(args: Array<String>) {
