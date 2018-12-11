@@ -64,7 +64,7 @@ uint64_t getMaxScore(uint64_t size) {
     return max_score;
 }
 
-uint64_t main() {
+int main() {
     printf("%ld\n", getMaxScore(SIZE_A));
     printf("%ld\n", getMaxScore(SIZE_B));
 
