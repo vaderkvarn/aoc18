@@ -1,9 +1,8 @@
-#237490
 from heapq import *
 from operator import itemgetter
 import sys
 
-def init(f):
+def init(f, ap):
     game_map = []
     players = []
     i = 0
@@ -12,12 +11,13 @@ def init(f):
         for j in range(len(line)):
             c = line[j]
             if c == 'G' or c == 'E':
-                players.append({'type': c, 'hp': 200, 'pos': (i, j)})
+                p = {'ap': 3, 'type': c, 'hp': 200, 'pos': (i, j)}
+                players.append(p)
+            if c == 'E': p['ap'] = ap
         i += 1
     return (game_map, players)
 
 def get_player_at_pos(pos, players):
-    #TODO: Binary search
     for p in players:
         if p['pos'] == pos:
             return p
@@ -34,6 +34,7 @@ def get_valid_neighbors(game_map, p):
     if game_map[i][j+1] == '.': squares.add((i, j+1))
     if game_map[i][j-1] == '.': squares.add((i, j-1))
     return squares
+
 def get_enemy_neighbors(game_map, p, players):
     enemies = []
     t = enemy_type(p)
@@ -42,6 +43,7 @@ def get_enemy_neighbors(game_map, p, players):
     if game_map[i-1][j] == t: enemies.append(get_player_at_pos((i-1, j), players))
     if game_map[i][j+1] == t: enemies.append(get_player_at_pos((i, j+1), players))
     if game_map[i][j-1] == t: enemies.append(get_player_at_pos((i, j-1), players))
+    enemies = [p for p in enemies if p['hp'] >= 0]
     return sorted(enemies, key=itemgetter('hp', 'pos'))
 
 def get_shortest_path(game_map, p1, p2, shortest):
@@ -50,7 +52,7 @@ def get_shortest_path(game_map, p1, p2, shortest):
     visited = {}
     heappush(h, (1, (p1,p1)))
     while h:
-        length, end_points = heappop(h)
+        (length, end_points) = heappop(h)
         start, end = end_points
         if end == p2 and length <= shortest:
             paths.append(end_points)
@@ -90,7 +92,7 @@ def is_dead(p):
     return p['hp'] <= 0
 
 def attack(p1, p2):
-    p2['hp'] -= 3
+    p2['hp'] -= p1['ap']
 
 def potential_attack(game_map, player, players):
     enemy_neighbors = get_enemy_neighbors(game_map, player, players)
@@ -105,7 +107,7 @@ def potential_attack(game_map, player, players):
 
 def turn(game_map, player, players):
     if is_dead(player): return
-    players = [p for p in players if p['hp'] >= 0]
+    players = [p for p in players if not is_dead(p)]
     targets = get_targets(enemy_type(player), players) 
     if potential_attack(game_map, player, players): return True
     next_squares = set()
@@ -137,17 +139,32 @@ def round(game_map, players):
     for player in players:
         did_act = turn(game_map, player, players)
         if did_act: someone_acted = True
-    players = [p for p in players if p['hp'] >= 0]
+    players = [p for p in players if not is_dead(p)]
     if not someone_acted: return (game_map, players, False)
     return (game_map, players, True)
 
 def run(game_map, players):
     i = 0
+    num_elves = len([p for p in players if p['type'] == 'E'])
     while True:
         game_map, players, action = round(game_map, players)
         if not action: break
         i += 1
-    return (i-1, sum(map(lambda p: p['hp'], players)))
+    success = num_elves == len([p for p in players if p['type'] == 'E'])
+    return (i-1, sum(map(lambda p: p['hp'], players)), success, players[0]['type'])
 
-iterations, hp = run(*init('input'))
-print(iterations * hp)
+lo = 4
+hi = 999
+success = False
+tried = {}
+while lo < hi:
+    i = (hi + lo)//2
+    iterations, hp, success, winner = run(*init('input', i))
+    if success: hi = i
+    else: lo = i + 1
+    tried[i] = [iterations, hp, success, winner, i]
+
+if lo in tried:
+    iterations = tried[lo][0]
+    print(iterations * hp)
+else: print(run(*init('input', lo)))
